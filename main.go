@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/VarthanV/simple-ci-pipeline-runner/pkg/objects"
 	"github.com/VarthanV/simple-ci-pipeline-runner/pkg/pipeline"
@@ -14,13 +16,29 @@ import (
 func main() {
 	dirName := uuid.NewString()
 
-	defer func(dirName string) {
+	cleanup := func(dirName string) {
 		color.Blue("Cleaning up...")
-		err := os.RemoveAll(dirName)
+		// Change dir to parent
+		currentDir, err := os.Getwd()
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		parentDir := filepath.Dir(currentDir)
+
+		err = os.Chdir(parentDir)
+		if err != nil {
+			log.Println("unablr to change to parent dir")
+		}
+
+		err = os.RemoveAll(dirName)
 		if err != nil {
 			log.Println("error in removing dir ", err)
 		}
-	}(dirName)
+	}
+
+	defer cleanup(dirName)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -30,5 +48,4 @@ func main() {
 	// will do in the upcoming iteration
 	ctx = context.WithValue(ctx, objects.PipelineValueDirectoryName, dirName)
 	pipeline.Run(ctx)
-	panic("stacktrace")
 }
