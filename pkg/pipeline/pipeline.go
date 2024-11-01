@@ -111,6 +111,10 @@ func clone(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 // test: Stage 2 of the pipeline
 func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 	outStream := make(chan Pipeline)
+	errorMsg := &Error{
+		Stage: TaskStageClone,
+	}
+
 	go func() {
 		defer close(outStream)
 		for {
@@ -124,12 +128,48 @@ func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 				}
 
 				// Check if testing is configured it is optional can skip
-				_, ok = p.Tasks[TaskStageTest]
+				testStage, ok := p.Tasks[TaskStageTest]
 				if !ok {
 					outStream <- p
 					color.Yellow("Stage2: Testing phase not found , Skipping it...")
 					continue
 				}
+
+				color.Green("############### Stage2: Running Tests ######################")
+				// Change to dir
+
+				dirNameFromCtx := ctx.Value(objects.PipelineValueDirectoryName)
+				if dirNameFromCtx == nil {
+					log.Println("filename not set")
+					errorMsg.Error = ErrFileNameRequired
+					p.Err = errorMsg
+					outStream <- p
+					continue
+				}
+
+				dirName, _ := dirNameFromCtx.(string)
+				err := os.Chdir(dirName)
+				if err != nil {
+					log.Println("erorr in changing dir ", err)
+					errorMsg.Error = err
+					p.Err = errorMsg
+					outStream <- p
+					continue
+				}
+
+				cmd := exec.Command(testStage.Command)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				err = cmd.Run()
+				if err != nil {
+					errorMsg.Error = err
+					p.Err = errorMsg
+					outStream <- p
+					continue
+				}
+
+				outStream <- p
+				color.Green("######### Stage2:successful #########################")
 
 			}
 		}
@@ -144,12 +184,15 @@ func Run(ctx context.Context) {
 			"clone": {
 				RepositoryURL: "https://github.com/VarthanV/simple-shell",
 			},
+			"test": {
+				Command: "npm run test",
+			},
 		},
 	})
 
 	pipeline := test(ctx, clone(ctx, ch))
 
 	for rslt := range pipeline {
-		log.Println(rslt)
+		log.Println(rslt.Err.Error)
 	}
 }
