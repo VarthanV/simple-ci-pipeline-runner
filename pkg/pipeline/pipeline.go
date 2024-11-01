@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -157,7 +158,9 @@ func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 					continue
 				}
 
-				cmd := exec.Command(testStage.Command)
+				//FIXME: base command is hardcoded need to get from user when
+				// extending
+				cmd := exec.Command("sh", "-c", fmt.Sprintf("npm i && %s", testStage.Command))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				err = cmd.Run()
@@ -182,7 +185,7 @@ func Run(ctx context.Context) {
 	ch := generate(Pipeline{
 		Tasks: map[TaskStage]TaskArgs{
 			"clone": {
-				RepositoryURL: "https://github.com/VarthanV/simple-shell",
+				RepositoryURL: "https://github.com/VarthanV/sample-nodejs-app",
 			},
 			"test": {
 				Command: "npm run test",
@@ -193,6 +196,8 @@ func Run(ctx context.Context) {
 	pipeline := test(ctx, clone(ctx, ch))
 
 	for rslt := range pipeline {
-		log.Println(rslt.Err.Error)
+		if rslt.Err != nil {
+			log.Println(rslt.Err.Error)
+		}
 	}
 }
