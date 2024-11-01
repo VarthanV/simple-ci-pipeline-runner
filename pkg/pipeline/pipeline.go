@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/VarthanV/simple-ci-pipeline-runner/pkg/objects"
 	"github.com/fatih/color"
 )
 
@@ -70,11 +71,23 @@ func clone(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 					continue
 				}
 
+				dirNameFromCtx := ctx.Value(objects.PipelineValueDirectoryName)
+				if dirNameFromCtx == nil {
+					log.Println("filename not set")
+					errorMsg.Error = ErrFileNameRequired
+					p.Err = errorMsg
+					outStream <- p
+					continue
+				}
+
+				dirName, _ := dirNameFromCtx.(string)
+
 				color.Green("############### Stage1: Cloning Repo ######################")
 				cmd := exec.Command(
 					"git",
 					"clone",
 					cloneStage.RepositoryURL,
+					dirName,
 					"--progress")
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
@@ -114,6 +127,7 @@ func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 				_, ok = p.Tasks[TaskStageTest]
 				if !ok {
 					outStream <- p
+					color.Yellow("Stage2: Testing phase not found , Skipping it...")
 					continue
 				}
 
@@ -121,7 +135,7 @@ func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 		}
 	}()
 
-	return pipeline
+	return outStream
 }
 
 func Run(ctx context.Context) {
@@ -133,7 +147,7 @@ func Run(ctx context.Context) {
 		},
 	})
 
-	pipeline := clone(ctx, ch)
+	pipeline := test(ctx, clone(ctx, ch))
 
 	for rslt := range pipeline {
 		log.Println(rslt)
