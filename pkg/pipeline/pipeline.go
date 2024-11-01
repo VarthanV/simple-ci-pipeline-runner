@@ -84,7 +84,8 @@ func clone(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 				dirName, _ := dirNameFromCtx.(string)
 
 				color.Green("############### Stage1: Cloning Repo ######################")
-				cmd := exec.Command(
+				cmd := exec.CommandContext(
+					ctx,
 					"git",
 					"clone",
 					cloneStage.RepositoryURL,
@@ -158,9 +159,11 @@ func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 					continue
 				}
 
-				//FIXME: base command is hardcoded need to get from user when
+				//FIXME: base setup command is hardcoded need to get from user when
 				// extending
-				cmd := exec.Command("sh", "-c", fmt.Sprintf("npm i && %s", testStage.Command))
+				cmd := exec.CommandContext(ctx,
+					"sh", "-c",
+					fmt.Sprintf("npm i && %s", testStage.Command))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				err = cmd.Run()
@@ -177,6 +180,13 @@ func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 			}
 		}
 	}()
+
+	return outStream
+}
+
+// build: Stage 3 of the pipeline
+func build(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
+	outStream := make(chan Pipeline)
 
 	return outStream
 }

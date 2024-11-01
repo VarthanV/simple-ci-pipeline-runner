@@ -47,5 +47,6 @@ func main() {
 	// FIXME: can be refactored and improve readablity with custom contexts
 	// will do in the upcoming iteration
 	ctx = context.WithValue(ctx, objects.PipelineValueDirectoryName, dirName)
+
 	pipeline.Run(ctx)
 }
