@@ -2,8 +2,11 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
+	"log"
+	"os"
 	"os/exec"
+
+	"github.com/fatih/color"
 )
 
 type TaskStage string
@@ -27,6 +30,17 @@ type Error struct {
 type Pipeline struct {
 	Tasks map[TaskStage]TaskArgs
 	Err   *Error
+}
+
+func generate(p ...Pipeline) <-chan Pipeline {
+	ch := make(chan Pipeline)
+	go func() {
+		defer close(ch)
+		for _, val := range p {
+			ch <- val
+		}
+	}()
+	return ch
 }
 
 // clone: Stage 1 of the pipeline
@@ -56,18 +70,72 @@ func clone(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 					continue
 				}
 
-				cmd := exec.Command("git", "clone", cloneStage.RepositoryURL)
-				stdout, err := cmd.Output()
+				color.Green("############### Stage1: Cloning Repo ######################")
+				cmd := exec.Command(
+					"git",
+					"clone",
+					cloneStage.RepositoryURL,
+					"--progress")
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				err := cmd.Run()
 				if err != nil {
 					errorMsg.Error = err
 					p.Err = errorMsg
 					outStream <- p
 					continue
 				}
-				fmt.Println(string(stdout))
+
+				outStream <- p
+				color.Green("######### Stage1:sucessful #########################")
 			}
 		}
 	}()
 
 	return outStream
+}
+
+// test: Stage 2 of the pipeline
+func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
+	outStream := make(chan Pipeline)
+	go func() {
+		defer close(outStream)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case p, ok := <-pipeline:
+				if !ok {
+					return
+				}
+
+				// Check if testing is configured it is optional can skip
+				_, ok = p.Tasks[TaskStageTest]
+				if !ok {
+					outStream <- p
+					continue
+				}
+
+			}
+		}
+	}()
+
+	return pipeline
+}
+
+func Run(ctx context.Context) {
+	ch := generate(Pipeline{
+		Tasks: map[TaskStage]TaskArgs{
+			"clone": {
+				RepositoryURL: "https://github.com/VarthanV/simple-shell",
+			},
+		},
+	})
+
+	pipeline := clone(ctx, ch)
+
+	for rslt := range pipeline {
+		log.Println(rslt)
+	}
 }
