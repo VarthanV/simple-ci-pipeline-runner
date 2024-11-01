@@ -187,7 +187,54 @@ func test(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 // build: Stage 3 of the pipeline
 func build(ctx context.Context, pipeline <-chan Pipeline) <-chan Pipeline {
 	outStream := make(chan Pipeline)
+	errorMsg := &Error{}
 
+	go func() {
+		defer close(outStream)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case p, ok := <-pipeline:
+				if !ok {
+					return
+				}
+				if p.Err != nil {
+					outStream <- p
+					continue
+				}
+
+				// Get build phase task
+				taskStageBuild, ok := p.Tasks[TaskStageBuild]
+				if !ok {
+					errorMsg.Error = ErrStageBuildRequired
+					p.Err = errorMsg
+					outStream <- p
+					continue
+				}
+
+				color.Green("############### Stage 3: Build  ######################")
+
+				cmd := exec.CommandContext(ctx,
+					"sh", "-c",
+					taskStageBuild.Command)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				err := cmd.Run()
+				if err != nil {
+					errorMsg.Error = err
+					p.Err = errorMsg
+					outStream <- p
+					continue
+				}
+
+				outStream <- p
+				color.Green("######### Stage3:successful #########################")
+			}
+		}
+	}()
 	return outStream
 }
 
@@ -200,14 +247,17 @@ func Run(ctx context.Context) {
 			"test": {
 				Command: "npm run test",
 			},
+			"build": {
+				Command: "npm run build",
+			},
 		},
 	})
 
-	pipeline := test(ctx, clone(ctx, ch))
+	pipeline := build(ctx, test(ctx, clone(ctx, ch)))
 
 	for rslt := range pipeline {
 		if rslt.Err != nil {
-			log.Println(rslt.Err.Error)
+			color.Red("Pipeline failed in stage %s with error %s", rslt.Err.Stage, rslt.Err.Error)
 		}
 	}
 }
