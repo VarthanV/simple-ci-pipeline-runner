@@ -11,8 +11,6 @@ This project  is a exercise  to understand ``Pipeline`` pattern using ``Channels
 
 - **Build**: In this stage the command configured for build is run and this marks the end of the pipeline
 
-![alt text](diagram.png)
-
 
 - The  possible arguments that a  task can take is given in the below struct
 
