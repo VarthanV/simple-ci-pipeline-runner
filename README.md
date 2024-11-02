@@ -30,6 +30,9 @@ type Pipeline struct {
 }
 ```
 
+## Note
+This is not production ready , This code directly runs on the host machine which is serious security issue and there are multiple features missing and flaws are there , This is just a  way to put the pipeline pattern into action.
+ 
 ## Additional Links
 
 [Demo](https://youtu.be/dPiFzJVhjZI)
