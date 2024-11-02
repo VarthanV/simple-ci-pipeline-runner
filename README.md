@@ -32,11 +32,11 @@ type Pipeline struct {
 }
 ```
 
-## Demo video
+## Demo
 
-<video width="320" height="240" controls>
-  <source src="demo.mov" type="video/mp4">
-</video>
-
-
+<iframe width="560" height="315"
+src="https://youtu.be/dPiFzJVhjZI" 
+frameborder="0" 
+allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+allowfullscreen></iframe>
 
