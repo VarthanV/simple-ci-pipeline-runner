@@ -37,7 +37,7 @@ This is not production ready , This code directly runs on the host machine which
 
 [Demo](https://youtu.be/dPiFzJVhjZI)
 
-[Sample Repo](https://github.com/VarthanV/sample-nodejs-app)
+[Repo used to run the pipeline](https://github.com/VarthanV/sample-nodejs-app)
 
 [Pipeline pattern reading](https://github.com/VarthanV/go-concurrency-exercises/tree/main/pipelines)
 
