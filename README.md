@@ -32,10 +32,11 @@ type Pipeline struct {
 }
 ```
 
-## Demo
+## Additional Links
 
 [Demo](https://youtu.be/dPiFzJVhjZI)
 
+[Sample Repo](https://github.com/VarthanV/sample-nodejs-app)
 
-
+[Pipeline pattern reading](https://github.com/VarthanV/go-concurrency-exercises/tree/main/pipelines)
 
