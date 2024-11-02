@@ -48,9 +48,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
-	defer once.Do(func() {
-		cleanup(dirName)
-	})
 
 	go func() {
 		<-sig
@@ -67,5 +64,11 @@ func main() {
 
 	pipeline.Run(ctx)
 
+	once.Do(func() {
+		go func() {
+			cancel()
+			cleanup(dirName)
+		}()
+	})
 	<-cleanupDone
 }
