@@ -1,5 +1,7 @@
 # simple-ci-pipeline-runner
 
+[Demo](https://youtu.be/dPiFzJVhjZI)
+
 This project  is a exercise  to understand ``Pipeline`` pattern using ``Channels``. Pipeline has 3 stages
     - Clone
     - Test
@@ -34,8 +36,6 @@ type Pipeline struct {
 This is not production ready , This code directly runs on the host machine which is serious security issue and there are multiple features missing and flaws are there , This is just a  way to put the pipeline pattern into action.
  
 ## Additional Links
-
-[Demo](https://youtu.be/dPiFzJVhjZI)
 
 [Repo used to run the pipeline](https://github.com/VarthanV/sample-nodejs-app)
 
